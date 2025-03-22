@@ -30,8 +30,6 @@ export async function apiFetch<T>(
     headers.set("Content-Type", "application/json");
   }
 
-  console.log("🔑 Access Token:", accessToken);
-
   // Add auth token if available and not a login/refresh request
   if (
     accessToken &&
