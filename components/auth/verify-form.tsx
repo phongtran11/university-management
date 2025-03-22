@@ -1,16 +1,27 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
-import { z } from "zod"
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
 
-import { Button } from "@/components/ui/button"
-import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
-import { useToast } from "@/hooks/use-toast"
-import { checkEmailVerified, verifyEmail } from "@/lib/auth"
+import { Button } from "@/components/ui/button";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { useToast } from "@/hooks/use-toast";
+import {
+  verifyEmailAction,
+  checkEmailVerifiedAction,
+  logoutAction,
+} from "@/lib/auth";
+import { APP_ROUTES } from "@/lib/constants";
 
 const formSchema = z.object({
   code: z
@@ -24,61 +35,92 @@ const formSchema = z.object({
     .regex(/^\d+$/, {
       message: "Mã xác thực chỉ được chứa số.",
     }),
-})
+});
 
 export function VerifyForm() {
-  const router = useRouter()
-  const { toast } = useToast()
-  const [isLoading, setIsLoading] = useState(false)
+  const router = useRouter();
+  const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(false);
+  const [isExiting, setIsExiting] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       code: "",
     },
-  })
+  });
 
   // Check if email is already verified
   useEffect(() => {
     const checkVerificationStatus = async () => {
       try {
-        const isVerified = await checkEmailVerified()
-        if (isVerified) {
+        const result = await checkEmailVerifiedAction();
+        if (result.verified) {
           toast({
             title: "Email đã được xác thực",
             description: "Đang chuyển hướng đến trang chủ...",
-          })
-          router.push("/dashboard")
+          });
+          router.push(APP_ROUTES.DASHBOARD);
         }
       } catch (error) {
         // User is not verified or not logged in, stay on this page
       }
-    }
+    };
 
-    checkVerificationStatus()
-  }, [router, toast])
+    checkVerificationStatus();
+  }, [router, toast]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    setIsLoading(true)
+    setIsLoading(true);
     try {
-      await verifyEmail(values.code)
+      const result = await verifyEmailAction(values.code);
 
-      toast({
-        title: "Xác thực thành công",
-        description: "Email của bạn đã được xác thực.",
-      })
+      if (result.success) {
+        toast({
+          variant: "success",
+          title: "Xác thực thành công",
+          description: "Email của bạn đã được xác thực.",
+        });
 
-      router.push("/dashboard")
+        router.push(APP_ROUTES.DASHBOARD);
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Xác thực thất bại",
+          description: "Mã xác thực không chính xác hoặc đã hết hạn.",
+        });
+      }
     } catch (error) {
       toast({
         variant: "destructive",
         title: "Xác thực thất bại",
-        description: "Mã xác thực không chính xác hoặc đã hết hạn.",
-      })
+        description: "Đã xảy ra lỗi khi xác thực.",
+      });
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
   }
+
+  const handleExit = async () => {
+    setIsExiting(true);
+    try {
+      // Clear the tokens and redirect to login
+      await logoutAction();
+      toast({
+        title: "Đã thoát khỏi quá trình xác thực",
+        description: "Bạn sẽ cần đăng nhập lại để tiếp tục.",
+      });
+      router.push(APP_ROUTES.LOGIN);
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Đã xảy ra lỗi",
+        description: "Không thể thoát khỏi quá trình xác thực.",
+      });
+    } finally {
+      setIsExiting(false);
+    }
+  };
 
   return (
     <Form {...form}>
@@ -100,11 +142,20 @@ export function VerifyForm() {
             </FormItem>
           )}
         />
-        <Button type="submit" className="w-full" disabled={isLoading}>
-          {isLoading ? "Đang xác thực..." : "Xác thực"}
-        </Button>
+        <div className="flex flex-col space-y-2">
+          <Button type="submit" disabled={isLoading}>
+            {isLoading ? "Đang xác thực..." : "Xác thực"}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleExit}
+            disabled={isExiting}
+          >
+            {isExiting ? "Đang thoát..." : "Thoát và đăng nhập lại"}
+          </Button>
+        </div>
       </form>
     </Form>
-  )
+  );
 }
-

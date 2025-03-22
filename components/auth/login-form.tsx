@@ -1,16 +1,25 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
-import { z } from "zod"
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
 
-import { Button } from "@/components/ui/button"
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
-import { useToast } from "@/hooks/use-toast"
-import { loginUser } from "@/lib/auth"
+import { Button } from "@/components/ui/button";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { useToast } from "@/hooks/use-toast";
+import { loginAction } from "@/lib/auth";
+import { APP_ROUTES } from "@/lib/constants";
+import { EyeOff, Eye } from "lucide-react";
 
 const formSchema = z.object({
   email: z.string().email({
@@ -19,12 +28,13 @@ const formSchema = z.object({
   password: z.string().min(8, {
     message: "Mật khẩu phải có ít nhất 8 ký tự.",
   }),
-})
+});
 
 export function LoginForm() {
-  const router = useRouter()
-  const { toast } = useToast()
-  const [isLoading, setIsLoading] = useState(false)
+  const router = useRouter();
+  const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -32,32 +42,40 @@ export function LoginForm() {
       email: "",
       password: "",
     },
-  })
+  });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    setIsLoading(true)
+    setIsLoading(true);
     try {
-      const response = await loginUser(values)
+      const result = await loginAction(values);
 
-      toast({
-        title: "Đăng nhập thành công",
-        description: "Đang chuyển hướng...",
-      })
+      if (result.success) {
+        toast({
+          variant: "success",
+          title: "Đăng nhập thành công",
+        });
 
-      // Check if email is verified
-      if (!response.email_verified) {
-        router.push("/verify")
+        // Check if email is verified
+        if (!result?.user?.email_verified) {
+          router.push(APP_ROUTES.VERIFY);
+        } else {
+          router.push(APP_ROUTES.DASHBOARD);
+        }
       } else {
-        router.push("/dashboard")
+        toast({
+          variant: "destructive",
+          title: "Đăng nhập thất bại",
+          description: "Email hoặc mật khẩu không chính xác.",
+        });
       }
     } catch (error) {
       toast({
         variant: "destructive",
         title: "Đăng nhập thất bại",
-        description: error instanceof Error ? error.message : "Email hoặc mật khẩu không chính xác.",
-      })
+        description: "Đã xảy ra lỗi khi đăng nhập.",
+      });
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
   }
 
@@ -84,7 +102,29 @@ export function LoginForm() {
             <FormItem>
               <FormLabel>Mật khẩu</FormLabel>
               <FormControl>
-                <Input type="password" placeholder="********" {...field} />
+                <div className="relative" key={showPassword ? "show" : "hide"}>
+                  <Input
+                    type={showPassword ? "text" : "password"}
+                    placeholder="********"
+                    {...field}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-0 top-0 h-full px-3 py-2 text-muted-foreground"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                    <span className="sr-only">
+                      {showPassword ? "Hide password" : "Show password"}
+                    </span>
+                  </Button>
+                </div>
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -95,6 +135,5 @@ export function LoginForm() {
         </Button>
       </form>
     </Form>
-  )
+  );
 }
-

@@ -1,9 +1,9 @@
-"use client"
+"use client";
 
-import { useRouter } from "next/navigation"
-import { LogOut, Menu, User } from "lucide-react"
+import { useRouter } from "next/navigation";
+import { LogOut, Menu, User } from "lucide-react";
 
-import { Button } from "@/components/ui/button"
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,29 +11,40 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { useToast } from "@/hooks/use-toast"
-import { logoutUser } from "@/lib/auth"
+} from "@/components/ui/dropdown-menu";
+import { useToast } from "@/hooks/use-toast";
+import { logoutAction } from "@/lib/auth";
+import { APP_ROUTES } from "@/lib/constants";
 
 export function DashboardHeader() {
-  const router = useRouter()
-  const { toast } = useToast()
+  const router = useRouter();
+  const { toast } = useToast();
 
   const handleLogout = async () => {
     try {
-      await logoutUser()
-      toast({
-        title: "Đăng xuất thành công",
-      })
-      router.push("/login")
+      const result = await logoutAction();
+
+      if (result.success) {
+        toast({
+          variant: "success",
+          title: "Đăng xuất thành công",
+        });
+        router.push(APP_ROUTES.LOGIN);
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Đăng xuất thất bại",
+          description: "Đã xảy ra lỗi khi đăng xuất.",
+        });
+      }
     } catch (error) {
       toast({
         variant: "destructive",
         title: "Đăng xuất thất bại",
         description: "Đã xảy ra lỗi khi đăng xuất.",
-      })
+      });
     }
-  }
+  };
 
   return (
     <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b bg-background px-4 md:px-6">
@@ -69,6 +80,5 @@ export function DashboardHeader() {
         </DropdownMenu>
       </div>
     </header>
-  )
+  );
 }
-

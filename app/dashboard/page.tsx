@@ -1,8 +1,8 @@
-import { DashboardHeader } from "@/components/dashboard/dashboard-header"
-import { DashboardSidebar } from "@/components/dashboard/dashboard-sidebar"
-import { EmptyDashboard } from "@/components/dashboard/empty-dashboard"
+import { DashboardHeader } from "@/components/dashboard/dashboard-header";
+import { DashboardSidebar } from "@/components/dashboard/dashboard-sidebar";
+import { EmptyDashboard } from "@/components/dashboard/empty-dashboard";
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
   return (
     <div className="flex min-h-screen flex-col">
       <DashboardHeader />
@@ -13,6 +13,5 @@ export default function DashboardPage() {
         </main>
       </div>
     </div>
-  )
+  );
 }
-

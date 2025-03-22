@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation"
+import { APP_ROUTES } from "@/lib/constants"
 
 export default function Home() {
   // Redirect to dashboard by default
-  // In a real app, you would check authentication status here
-  redirect("/login")
+  redirect(APP_ROUTES.DASHBOARD)
 }
 
